@@ -1,5 +1,6 @@
 # Podio Client
 
+[![Tests](https://github.com/podio-labs/podio-client/actions/workflows/tests.yml/badge.svg)](https://github.com/podio-labs/podio-client/actions/workflows/tests.yml)
 [![Latest Stable Version](https://img.shields.io/packagist/v/podio-labs/podio-client)](https://packagist.org/packages/podio-labs/podio-client)
 [![License](https://img.shields.io/packagist/l/podio-labs/podio-client)](https://packagist.org/packages/podio-labs/podio-client)
 

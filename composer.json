@@ -1,8 +1,25 @@
 {
     "name": "podio-labs/podio-client",
-    "description": "Minimal, framework-agnostic PHP client for the Podio API, built on PSR-18.",
+    "description": "Modern, framework-agnostic PHP client for the Podio API. PSR-18, OAuth handled, fully typed.",
     "type": "library",
+    "keywords": [
+        "podio",
+        "podio-api",
+        "podio-client",
+        "podio-sdk",
+        "psr-18"
+    ],
+    "homepage": "https://github.com/podio-labs/podio-client",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Karim Tao"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/podio-labs/podio-client/issues",
+        "source": "https://github.com/podio-labs/podio-client"
+    },
     "require": {
         "php": "^8.3",
         "php-http/discovery": "^1.14",
@@ -14,13 +31,13 @@
         "psr/simple-cache": "^3.0"
     },
     "require-dev": {
+        "guzzlehttp/guzzle": "^7.8",
         "laravel/pao": "^1.1",
         "laravel/pint": "^1.29",
         "nyholm/psr7": "^1.8",
         "pestphp/pest": "^4.4",
         "pestphp/pest-plugin-type-coverage": "^4.0",
-        "phpstan/phpstan": "^2.2",
-        "symfony/http-client": "^8.1"
+        "phpstan/phpstan": "^2.2"
     },
     "autoload": {
         "psr-4": {
