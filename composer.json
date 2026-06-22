@@ -1,6 +1,6 @@
 {
     "name": "podio-labs/podio-client",
-    "description": "Unofficial, framework-agnostic PHP client for the Podio API, built on PSR-18.",
+    "description": "Minimal, framework-agnostic PHP client for the Podio API, built on PSR-18.",
     "type": "library",
     "license": "MIT",
     "require": {
@@ -38,6 +38,9 @@
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest"
     },
     "minimum-stability": "dev",
     "prefer-stable": true
