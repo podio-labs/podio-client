@@ -57,7 +57,18 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/pest"
+        "lint": "pint",
+        "test:lint": "pint --test",
+        "test:static": "phpstan analyse",
+        "test:type-coverage": "pest --type-coverage --min=100",
+        "test:unit": "pest --parallel --coverage --min=100",
+        "test:mutation": "pest --parallel --mutate --everything --covered-only --min=80",
+        "test": [
+            "@test:lint",
+            "@test:static",
+            "@test:type-coverage",
+            "@test:unit"
+        ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true
