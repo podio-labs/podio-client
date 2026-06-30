@@ -4,9 +4,9 @@
 [![Latest Stable Version](https://img.shields.io/packagist/v/podio-labs/podio-client)](https://packagist.org/packages/podio-labs/podio-client)
 [![License](https://img.shields.io/packagist/l/podio-labs/podio-client)](https://packagist.org/packages/podio-labs/podio-client)
 
-A framework-agnostic PHP client for the Podio API, built on PSR-18 — bring your own HTTP client, everything else is wired for you.
+A framework-agnostic PHP client for the Podio API, built on PSR-18, bring your own HTTP client, everything else is wired for you.
 
-In this example, we build a client and create an item — authentication is handled for you:
+In this example, we build a client and create an item, authentication is handled for you:
 
 ```php
 use Podio\Client\PodioClient;
@@ -48,11 +48,34 @@ use Podio\Client\PodioClient;
 
 $podio = PodioClient::factory()
     ->withClientCredentials($clientId, $clientSecret) // required
-    ->withPasswordAuth($username, $password)          // required
+    ->withPasswordAuth($username, $password)          // required (see Authentication for more details)
     ->withBaseUrl('https://api.podio.com')            // optional
-    ->withTokenCache($psr16Cache)                     // optional
-    ->withHttpClient($psr18Client)                    // optional
+    ->withTokenCache($cache)                     // optional (PSR-16)
+    ->withHttpClient($client)                    // optional (PSR-18)
     ->make();
+```
+
+### Authentication
+
+A client always needs your Podio API credentials plus one authentication method, slotted into the builder above. 
+The token manager fetches, caches and refreshes the access token for you.
+
+| Method | Builder call | Use when |
+|---|---|---|
+| Password | `withPasswordAuth($username, $password)` | service account, server-to-server |
+| Authorization code | `withAuthorizationCodeAuth($code, $redirectUri)` | per-user OAuth2, after the user authorises your app |
+| App | `withAppAuth($appId, $appToken)` | a single Podio app via its app token |
+| Access token | `withAccessToken($token, $expiresAt, $refreshToken)` | reuse a token you stored |
+
+Read (and persist) the current token, useful for the per-user flows:
+
+```php
+$token = $podio->authenticate(); // ensure a valid token and return it
+$token = $podio->token();        // current token
+
+$token->value();
+$token->expiresAt();
+$token->refreshToken();
 ```
 
 ### Endpoints
@@ -69,8 +92,10 @@ $file = $podio->files()->upload($absolutePath, 'photo.jpg');
 $podio->files()->attach($file->file_id, ['ref_type' => 'item', 'ref_id' => $itemId]);
 $bytes = $podio->files()->getRaw($fileId);
 
-// Comments & embeds
+// Comments
 $podio->comments()->create('item', $itemId, ['value' => 'Imported from Dropbox']);
+
+// Embeds
 $embed = $podio->embed()->create(['url' => 'https://youtu.be/...']);
 
 // Webhooks
@@ -78,8 +103,16 @@ $hooks = $podio->hooks()->getForApp($appId);
 $hook = $podio->hooks()->createForApp($appId, ['url' => 'https://example.com/hook', 'type' => 'item.create']);
 $podio->hooks()->verify($hook->hook_id);
 
+// Organizations
+$organizations = $podio->organizations()->getAll();
+$organization = $podio->organizations()->get($orgId);
+
+// Spaces
+$space = $podio->spaces()->get($spaceId);
+
 // Apps
 $app = $podio->apps()->get($appId);
+$apps = $podio->apps()->getForSpace($spaceId);
 ```
 
 ### Raw requests
@@ -105,8 +138,8 @@ $podio->rateLimit()->remaining();
 
 `PodioClient` wraps a transporter over your PSR-18 client (or one discovered via `php-http/discovery`) and a token manager that:
 
-- authenticates with Podio's **password grant** and caches the access token when you pass a PSR-16 cache;
-- refreshes the token automatically — `send()` retries once on an expired-token response.
+- authenticates with the configured grant (password, authorization code, app, or a seeded access token) and caches the access token when you pass a PSR-16 cache;
+- refreshes the token automatically: `send()` retries once on an expired-token response, using the refresh token when there is one, otherwise re-authenticating.
 
 Every endpoint (`items()`, `files()`, …) is a small typed wrapper over `send()`.
 
