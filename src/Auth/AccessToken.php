@@ -2,29 +2,38 @@
 
 namespace Podio\Client\Auth;
 
-use RuntimeException;
+use Podio\Client\Exceptions\PodioAuthenticationException;
 
 final readonly class AccessToken
 {
     public function __construct(
         private string $value,
         private int $expiresAt,
+        private ?string $refreshToken = null,
     ) {}
 
     public static function fromOAuthResponse(mixed $response): self
     {
         $accessToken = is_object($response) ? ($response->access_token ?? null) : null;
         $expiresIn = is_object($response) ? ($response->expires_in ?? null) : null;
+        $refreshToken = is_object($response) ? ($response->refresh_token ?? null) : null;
 
         if (! is_string($accessToken) || $accessToken === '') {
-            throw new RuntimeException('Podio authentication response did not include an access token.');
+            throw new PodioAuthenticationException('Podio authentication response did not include an access token.');
         }
 
         if (! is_numeric($expiresIn) || (int) $expiresIn < 1) {
-            throw new RuntimeException('Podio authentication response did not include a valid expiration.');
+            throw new PodioAuthenticationException('Podio authentication response did not include a valid expiration.');
         }
 
-        return new self($accessToken, time() + (int) $expiresIn);
+        $refreshToken = is_string($refreshToken) && $refreshToken !== '' ? $refreshToken : null;
+
+        return new self($accessToken, time() + (int) $expiresIn, $refreshToken);
+    }
+
+    public static function fromValues(string $accessToken, int $expiresAt, ?string $refreshToken = null): self
+    {
+        return new self($accessToken, $expiresAt, $refreshToken);
     }
 
     public static function fromCacheValue(mixed $value): ?self
@@ -48,6 +57,16 @@ final readonly class AccessToken
     public function value(): string
     {
         return $this->value;
+    }
+
+    public function refreshToken(): ?string
+    {
+        return $this->refreshToken;
+    }
+
+    public function expiresAt(): int
+    {
+        return $this->expiresAt;
     }
 
     public function ttl(): int

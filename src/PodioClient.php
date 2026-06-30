@@ -2,6 +2,7 @@
 
 namespace Podio\Client;
 
+use Podio\Client\Auth\AccessToken;
 use Podio\Client\Auth\TokenManager;
 use Podio\Client\Endpoints\AppsEndpoint;
 use Podio\Client\Endpoints\CommentsEndpoint;
@@ -10,6 +11,7 @@ use Podio\Client\Endpoints\FilesEndpoint;
 use Podio\Client\Endpoints\HooksEndpoint;
 use Podio\Client\Endpoints\ItemsEndpoint;
 use Podio\Client\Endpoints\SearchEndpoint;
+use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Http\Transporter;
 
 final class PodioClient
@@ -62,6 +64,19 @@ final class PodioClient
     public function rateLimit(): RateLimitSnapshot
     {
         return $this->transporter->rateLimit()->snapshot();
+    }
+
+    public function authenticate(): AccessToken
+    {
+        $this->tokens->ensure();
+
+        return $this->tokens->current()
+            ?? throw new PodioAuthenticationException('Podio authentication did not yield an access token.');
+    }
+
+    public function token(): ?AccessToken
+    {
+        return $this->tokens->current();
     }
 
     /**

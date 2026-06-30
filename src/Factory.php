@@ -6,6 +6,11 @@ use Closure;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use InvalidArgumentException;
+use Podio\Client\Auth\AccessToken;
+use Podio\Client\Auth\Grants\AppGrant;
+use Podio\Client\Auth\Grants\AuthorizationCodeGrant;
+use Podio\Client\Auth\Grants\Grant;
+use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\PodioCredentials;
 use Podio\Client\Auth\TokenManager;
 use Podio\Client\Http\Transporter;
@@ -21,9 +26,9 @@ final class Factory
 
     private ?string $clientSecret = null;
 
-    private ?string $username = null;
+    private ?Grant $grant = null;
 
-    private ?string $password = null;
+    private ?AccessToken $accessToken = null;
 
     private string $baseUrl = 'https://api.podio.com';
 
@@ -54,8 +59,28 @@ final class Factory
 
     public function withPasswordAuth(string $username, string $password): self
     {
-        $this->username = $username;
-        $this->password = $password;
+        $this->grant = new PasswordGrant($username, $password);
+
+        return $this;
+    }
+
+    public function withAuthorizationCodeAuth(string $code, string $redirectUri): self
+    {
+        $this->grant = new AuthorizationCodeGrant($code, $redirectUri);
+
+        return $this;
+    }
+
+    public function withAppAuth(int $appId, string $appToken): self
+    {
+        $this->grant = new AppGrant($appId, $appToken);
+
+        return $this;
+    }
+
+    public function withAccessToken(string $accessToken, int $expiresAt, ?string $refreshToken = null): self
+    {
+        $this->accessToken = AccessToken::fromValues($accessToken, $expiresAt, $refreshToken);
 
         return $this;
     }
@@ -97,8 +122,8 @@ final class Factory
             throw new InvalidArgumentException('Podio client credentials are required. Call withClientCredentials() before make().');
         }
 
-        if ($this->username === null || $this->password === null) {
-            throw new InvalidArgumentException('Podio password authentication is required. Call withPasswordAuth() before make().');
+        if ($this->grant === null && $this->accessToken === null) {
+            throw new InvalidArgumentException('Podio authentication is required. Call withPasswordAuth(), withAuthorizationCodeAuth(), withAppAuth(), or withAccessToken() before make().');
         }
 
         $transporter = new Transporter(
@@ -113,10 +138,12 @@ final class Factory
         return ($this->instantiator)(
             transporter: $transporter,
             tokens: new TokenManager(
-                credentials: new PodioCredentials($this->clientId, $this->clientSecret, $this->username, $this->password),
+                credentials: new PodioCredentials($this->clientId, $this->clientSecret),
                 transporter: $transporter,
                 cache: $this->tokenCache,
                 cacheKey: $this->tokenCacheKey,
+                grant: $this->grant,
+                accessToken: $this->accessToken,
             ),
         );
     }

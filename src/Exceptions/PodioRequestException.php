@@ -5,7 +5,7 @@ namespace Podio\Client\Exceptions;
 use Podio\Client\RateLimitSnapshot;
 use RuntimeException;
 
-final class PodioRequestException extends RuntimeException
+final class PodioRequestException extends RuntimeException implements PodioException
 {
     public function __construct(
         private readonly int $statusCode,

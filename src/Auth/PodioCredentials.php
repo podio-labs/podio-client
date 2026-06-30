@@ -7,7 +7,5 @@ final readonly class PodioCredentials
     public function __construct(
         public string $clientId,
         public string $clientSecret,
-        public string $username,
-        public string $password,
     ) {}
 }
