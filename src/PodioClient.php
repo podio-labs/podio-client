@@ -70,8 +70,7 @@ final class PodioClient
     {
         $this->tokens->ensure();
 
-        return $this->tokens->current()
-            ?? throw new PodioAuthenticationException('Podio authentication did not yield an access token.');
+        return $this->tokens->current() ?? throw new PodioAuthenticationException('Podio authentication did not yield an access token.');
     }
 
     public function token(): ?AccessToken

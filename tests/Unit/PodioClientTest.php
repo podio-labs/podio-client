@@ -1,5 +1,6 @@
 <?php
 
+use Podio\Client\Auth\AccessToken;
 use Podio\Client\Endpoints\AppsEndpoint;
 use Podio\Client\Endpoints\CommentsEndpoint;
 use Podio\Client\Endpoints\EmbedEndpoint;
@@ -95,4 +96,16 @@ test('a failed authentication surfaces as a PodioRequestException', function () 
 
     expect(fn () => $client->items()->get(5))
         ->toThrow(PodioRequestException::class, 'invalid credentials');
+});
+
+test('authenticate resolves and returns the access token', function () {
+    [$client] = podioClientWith([]);
+
+    expect($client->token())->toBeNull();
+
+    $token = $client->authenticate();
+
+    expect($token)->toBeInstanceOf(AccessToken::class)
+        ->and($token->value())->toBe('access-token')
+        ->and($client->token())->toBe($token);
 });

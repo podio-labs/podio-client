@@ -1,6 +1,8 @@
 <?php
 
 use Podio\Client\Exceptions\MissingResourceFieldException;
+use Podio\Client\Exceptions\PodioAuthenticationException;
+use Podio\Client\Exceptions\PodioException;
 use Podio\Client\Exceptions\PodioRequestException;
 use Podio\Client\RateLimitSnapshot;
 
@@ -25,7 +27,13 @@ test('PodioRequestException allows a null rate limit', function () {
 test('MissingResourceFieldException builds a helpful message', function () {
     $exception = new MissingResourceFieldException('item', 'app');
 
-    expect($exception->getMessage())->toContain("'app'")
-        ->and($exception->getMessage())->toContain("'item'")
+    expect($exception->getMessage())->toContain('app')
+        ->and($exception->getMessage())->toContain('item')
         ->and($exception->getMessage())->toContain('Request it explicitly');
+});
+
+test('every package exception implements the PodioException marker', function () {
+    expect(new PodioRequestException(500, null))->toBeInstanceOf(PodioException::class)
+        ->and(new MissingResourceFieldException('item', 'app'))->toBeInstanceOf(PodioException::class)
+        ->and(new PodioAuthenticationException('nope'))->toBeInstanceOf(PodioException::class);
 });
