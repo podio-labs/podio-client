@@ -7,7 +7,9 @@ use Podio\Client\Endpoints\EmbedEndpoint;
 use Podio\Client\Endpoints\FilesEndpoint;
 use Podio\Client\Endpoints\HooksEndpoint;
 use Podio\Client\Endpoints\ItemsEndpoint;
+use Podio\Client\Endpoints\OrganizationsEndpoint;
 use Podio\Client\Endpoints\SearchEndpoint;
+use Podio\Client\Endpoints\SpacesEndpoint;
 use Podio\Client\Exceptions\PodioRequestException;
 use Podio\Client\Factory;
 use Podio\Client\PodioClient;
@@ -22,7 +24,9 @@ test('factory returns a configurable factory', function () {
 test('it exposes every endpoint accessor', function () {
     [$client] = podioClientWith([]);
 
-    expect($client->apps())->toBeInstanceOf(AppsEndpoint::class)
+    expect($client->organizations())->toBeInstanceOf(OrganizationsEndpoint::class)
+        ->and($client->spaces())->toBeInstanceOf(SpacesEndpoint::class)
+        ->and($client->apps())->toBeInstanceOf(AppsEndpoint::class)
         ->and($client->items())->toBeInstanceOf(ItemsEndpoint::class)
         ->and($client->hooks())->toBeInstanceOf(HooksEndpoint::class)
         ->and($client->files())->toBeInstanceOf(FilesEndpoint::class)

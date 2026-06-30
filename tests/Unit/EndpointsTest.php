@@ -2,11 +2,16 @@
 
 use Podio\Client\Exceptions\PodioRequestException;
 use Podio\Client\Resources\App;
+use Podio\Client\Resources\AppCollection;
 use Podio\Client\Resources\Item;
 use Podio\Client\Resources\ItemCollection;
 use Podio\Client\Resources\ItemReferenceCollection;
+use Podio\Client\Resources\Organization;
+use Podio\Client\Resources\OrganizationCollection;
 use Podio\Client\Resources\RevisionCollection;
 use Podio\Client\Resources\RevisionDifferenceCollection;
+use Podio\Client\Resources\Space;
+use Podio\Client\Resources\SpaceCollection;
 use Podio\Client\RetryPolicy;
 use Podio\Client\Tests\Support\FailingStreamWrapper;
 
@@ -19,6 +24,75 @@ test('apps()->get fetches an app', function () {
         ->and($app->app_id)->toBe(1)
         ->and($http->requests[0]->getMethod())->toBe('GET')
         ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/app/1');
+});
+
+test('organizations()->getAll returns a collection with embedded spaces', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '[{"org_id":1,"name":"Acme","spaces":[{"space_id":10,"name":"Sales"},{"space_id":11,"name":"Ops"}]}]')]);
+
+    $orgs = $client->organizations()->getAll();
+
+    expect($orgs)->toBeInstanceOf(OrganizationCollection::class)
+        ->and($orgs)->toHaveCount(1)
+        ->and($orgs->first())->toBeInstanceOf(Organization::class)
+        ->and($orgs->first()->org_id)->toBe(1)
+        ->and($orgs->first()->name)->toBe('Acme')
+        ->and($http->requests[0]->getMethod())->toBe('GET')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/org/');
+
+    $spaces = $orgs->first()->spaces();
+
+    expect($spaces)->toBeInstanceOf(SpaceCollection::class)
+        ->and($spaces)->toHaveCount(2)
+        ->and($spaces->all()[0])->toBeInstanceOf(Space::class)
+        ->and($spaces->all()[0]->space_id)->toBe(10)
+        ->and($spaces->pluck('name'))->toBe(['Sales', 'Ops']);
+});
+
+test('organizations()->get fetches a single organization', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"org_id":7,"name":"Globex"}')]);
+
+    $org = $client->organizations()->get(7);
+
+    expect($org)->toBeInstanceOf(Organization::class)
+        ->and($org->org_id)->toBe(7)
+        ->and($org->name)->toBe('Globex')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/org/7');
+});
+
+test('an organization without embedded spaces yields an empty space collection', function () {
+    [$client] = podioClientWith([httpResponse(200, [], '{"org_id":7,"name":"Globex"}')]);
+
+    $spaces = $client->organizations()->get(7)->spaces();
+
+    expect($spaces)->toBeInstanceOf(SpaceCollection::class)
+        ->and($spaces)->toHaveCount(0)
+        ->and($spaces->all())->toBe([]);
+});
+
+test('spaces()->get fetches a single space', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"space_id":10,"org_id":1,"name":"Sales"}')]);
+
+    $space = $client->spaces()->get(10);
+
+    expect($space)->toBeInstanceOf(Space::class)
+        ->and($space->space_id)->toBe(10)
+        ->and($space->org_id)->toBe(1)
+        ->and($space->name)->toBe('Sales')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/space/10');
+});
+
+test('apps()->getForSpace returns the apps in a space', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '[{"app_id":100,"config":{"name":"Customers"}},{"app_id":101}]')]);
+
+    $apps = $client->apps()->getForSpace(10);
+
+    expect($apps)->toBeInstanceOf(AppCollection::class)
+        ->and($apps)->toHaveCount(2)
+        ->and($apps->all()[0])->toBeInstanceOf(App::class)
+        ->and($apps->all()[0]->app_id)->toBe(100)
+        ->and($apps->pluck('app_id'))->toBe([100, 101])
+        ->and($http->requests[0]->getMethod())->toBe('GET')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/app/space/10/');
 });
 
 test('items()->get fetches an item', function () {

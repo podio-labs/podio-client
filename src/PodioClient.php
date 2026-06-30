@@ -10,7 +10,9 @@ use Podio\Client\Endpoints\EmbedEndpoint;
 use Podio\Client\Endpoints\FilesEndpoint;
 use Podio\Client\Endpoints\HooksEndpoint;
 use Podio\Client\Endpoints\ItemsEndpoint;
+use Podio\Client\Endpoints\OrganizationsEndpoint;
 use Podio\Client\Endpoints\SearchEndpoint;
+use Podio\Client\Endpoints\SpacesEndpoint;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Http\Transporter;
 
@@ -24,6 +26,16 @@ final class PodioClient
     public static function factory(): Factory
     {
         return new Factory(static fn (mixed ...$args): self => new self(...$args));
+    }
+
+    public function organizations(): OrganizationsEndpoint
+    {
+        return new OrganizationsEndpoint($this);
+    }
+
+    public function spaces(): SpacesEndpoint
+    {
+        return new SpacesEndpoint($this);
     }
 
     public function apps(): AppsEndpoint
