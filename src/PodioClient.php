@@ -13,6 +13,7 @@ use Podio\Client\Endpoints\ItemsEndpoint;
 use Podio\Client\Endpoints\OrganizationsEndpoint;
 use Podio\Client\Endpoints\SearchEndpoint;
 use Podio\Client\Endpoints\SpacesEndpoint;
+use Podio\Client\Endpoints\UsersEndpoint;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Http\Transporter;
 
@@ -71,6 +72,11 @@ final class PodioClient
     public function embed(): EmbedEndpoint
     {
         return new EmbedEndpoint($this);
+    }
+
+    public function users(): UsersEndpoint
+    {
+        return new UsersEndpoint($this);
     }
 
     public function rateLimit(): RateLimitSnapshot

@@ -13,6 +13,8 @@ use Podio\Client\Resources\RevisionCollection;
 use Podio\Client\Resources\RevisionDifferenceCollection;
 use Podio\Client\Resources\Space;
 use Podio\Client\Resources\SpaceCollection;
+use Podio\Client\Resources\User;
+use Podio\Client\Resources\UserStatus;
 use Podio\Client\RetryPolicy;
 use Podio\Client\Tests\Support\FailingStreamWrapper;
 
@@ -369,4 +371,28 @@ test('withRetry retries failed requests according to the policy', function () {
 
     expect($items->total())->toBe(1)
         ->and($http->requests)->toHaveCount(3);
+});
+
+test('users()->get fetches the active user', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"user_id":5,"mail":"karim@example.com"}')]);
+
+    $user = $client->users()->get();
+
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->user_id)->toBe(5)
+        ->and($user->mail)->toBe('karim@example.com')
+        ->and($http->requests[0]->getMethod())->toBe('GET')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/user/');
+});
+
+test('users()->getStatus fetches the active user with their profile', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"user":{"user_id":5},"profile":{"profile_id":9,"name":"Mario Rossi"},"inbox_new":3}')]);
+
+    $status = $client->users()->getStatus();
+
+    expect($status)->toBeInstanceOf(UserStatus::class)
+        ->and($status->profile->name)->toBe('Mario Rossi')
+        ->and($status->inbox_new)->toBe(3)
+        ->and($http->requests[0]->getMethod())->toBe('GET')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/user/status');
 });

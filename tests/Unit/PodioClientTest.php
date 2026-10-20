@@ -10,6 +10,7 @@ use Podio\Client\Endpoints\ItemsEndpoint;
 use Podio\Client\Endpoints\OrganizationsEndpoint;
 use Podio\Client\Endpoints\SearchEndpoint;
 use Podio\Client\Endpoints\SpacesEndpoint;
+use Podio\Client\Endpoints\UsersEndpoint;
 use Podio\Client\Exceptions\PodioRequestException;
 use Podio\Client\Factory;
 use Podio\Client\PodioClient;
@@ -32,7 +33,8 @@ test('it exposes every endpoint accessor', function () {
         ->and($client->files())->toBeInstanceOf(FilesEndpoint::class)
         ->and($client->comments())->toBeInstanceOf(CommentsEndpoint::class)
         ->and($client->search())->toBeInstanceOf(SearchEndpoint::class)
-        ->and($client->embed())->toBeInstanceOf(EmbedEndpoint::class);
+        ->and($client->embed())->toBeInstanceOf(EmbedEndpoint::class)
+        ->and($client->users())->toBeInstanceOf(UsersEndpoint::class);
 });
 
 test('rateLimit returns an immutable snapshot of the current state', function () {
