@@ -1,6 +1,6 @@
 <?php
 
-use Podio\Client\Events\AccessTokenRefreshed;
+use Podio\Client\Events\TokenRefreshed;
 use Podio\Client\PodioClient;
 use Podio\Client\Tests\Support\ArrayCache;
 use Podio\Client\Tests\Support\EventRecorder;
@@ -60,11 +60,11 @@ test('make builds a client with app authentication', function () {
 test('make builds a client from a seeded access token', function () {
     $client = PodioClient::factory()
         ->withClientCredentials('id', 'secret')
-        ->withAccessToken('seeded-token', time() + 3600, 'seeded-refresh')
+        ->withToken('seeded-token', time() + 3600, 'seeded-refresh')
         ->make();
 
     expect($client)->toBeInstanceOf(PodioClient::class)
-        ->and($client->token()?->value())->toBe('seeded-token');
+        ->and($client->token()?->accessToken())->toBe('seeded-token');
 });
 
 test('make hands the event dispatcher to the token manager', function () {
@@ -81,5 +81,5 @@ test('make hands the event dispatcher to the token manager', function () {
         ->authenticate();
 
     expect($events->events)->toHaveCount(1)
-        ->and($events->events[0])->toBeInstanceOf(AccessTokenRefreshed::class);
+        ->and($events->events[0])->toBeInstanceOf(TokenRefreshed::class);
 });

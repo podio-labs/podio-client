@@ -1,13 +1,13 @@
 <?php
 
-use Podio\Client\Auth\AccessToken;
 use Podio\Client\Auth\Grants\AppGrant;
 use Podio\Client\Auth\Grants\AuthorizationCodeGrant;
 use Podio\Client\Auth\Grants\Grant;
 use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\PodioCredentials;
+use Podio\Client\Auth\Token;
 use Podio\Client\Auth\TokenManager;
-use Podio\Client\Events\AccessTokenRefreshed;
+use Podio\Client\Events\TokenRefreshed;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Tests\Support\ArrayCache;
 use Podio\Client\Tests\Support\EventRecorder;
@@ -18,7 +18,7 @@ function tokenManager(
     FakeHttpClient $http,
     ?CacheInterface $cache = null,
     ?Grant $grant = new PasswordGrant('user', 'pass'),
-    ?AccessToken $accessToken = null,
+    ?Token $token = null,
     ?EventRecorder $events = null,
 ): TokenManager {
     return new TokenManager(
@@ -27,7 +27,7 @@ function tokenManager(
         $cache,
         'podio.access_token',
         $grant,
-        $accessToken,
+        $token,
         $events,
     );
 }
@@ -38,7 +38,7 @@ test('ensure authenticates with the password grant and stores the token', functi
 
     expect($manager->ensure())->toBe('access-token')
         ->and($cache->has('podio.access_token'))->toBeTrue()
-        ->and(AccessToken::fromCacheValue($cache->get('podio.access_token'))?->value())->toBe('access-token');
+        ->and(Token::fromCacheValue($cache->get('podio.access_token'))?->accessToken())->toBe('access-token');
 });
 
 test('ensure posts the password grant with all credentials to the token endpoint', function () {
@@ -92,16 +92,16 @@ test('ensure reuses the in-memory token without touching the transport again', f
 test('ensure returns a seeded, still-valid access token without authenticating', function () {
     $manager = tokenManager(
         new FakeHttpClient([]),
-        accessToken: AccessToken::fromValues('seeded-token', time() + 3600),
+        token: Token::fromValues('seeded-token', time() + 3600),
     );
 
     expect($manager->ensure())->toBe('seeded-token')
-        ->and($manager->current()?->value())->toBe('seeded-token');
+        ->and($manager->current()?->accessToken())->toBe('seeded-token');
 });
 
 test('ensure promotes a valid cached token without authenticating', function () {
     $cache = new ArrayCache;
-    $cache->set('podio.access_token', AccessToken::fromOAuthResponse(
+    $cache->set('podio.access_token', Token::fromOAuthResponse(
         (object) ['access_token' => 'cached-token', 'expires_in' => 3600]
     )->toCacheValue());
 
@@ -122,7 +122,7 @@ test('ensure refreshes an expired seeded token with its refresh token', function
     $manager = tokenManager(
         $http,
         grant: null,
-        accessToken: AccessToken::fromValues('stale-token', time() - 10, 'the-refresh-token'),
+        token: Token::fromValues('stale-token', time() - 10, 'the-refresh-token'),
     );
 
     expect($manager->ensure())->toBe('access-token');
@@ -140,7 +140,7 @@ test('refresh forgets the token and authenticates again with the password grant'
     $manager = tokenManager(new FakeHttpClient([oauthTokenResponse()]), $cache);
 
     expect($manager->refresh())->toBe('access-token')
-        ->and(AccessToken::fromCacheValue($cache->get('podio.access_token'))?->value())->toBe('access-token');
+        ->and(Token::fromCacheValue($cache->get('podio.access_token'))?->accessToken())->toBe('access-token');
 });
 
 test('ensure dispatches the token it obtains by authenticating', function () {
@@ -149,8 +149,8 @@ test('ensure dispatches the token it obtains by authenticating', function () {
     tokenManager(new FakeHttpClient([oauthTokenResponse()]), events: $events)->ensure();
 
     expect($events->events)->toHaveCount(1)
-        ->and($events->events[0])->toBeInstanceOf(AccessTokenRefreshed::class)
-        ->and($events->events[0]->accessToken->value())->toBe('access-token');
+        ->and($events->events[0])->toBeInstanceOf(TokenRefreshed::class)
+        ->and($events->events[0]->token->accessToken())->toBe('access-token');
 });
 
 test('ensure dispatches the new token pair it obtains by refreshing', function () {
@@ -160,13 +160,13 @@ test('ensure dispatches the new token pair it obtains by refreshing', function (
     tokenManager(
         new FakeHttpClient([$refreshResponse]),
         grant: null,
-        accessToken: AccessToken::fromValues('stale-token', time() - 10, 'old-refresh-token'),
+        token: Token::fromValues('stale-token', time() - 10, 'old-refresh-token'),
         events: $events,
     )->ensure();
 
     expect($events->events)->toHaveCount(1)
-        ->and($events->events[0]->accessToken->value())->toBe('new-access-token')
-        ->and($events->events[0]->accessToken->refreshToken())->toBe('new-refresh-token');
+        ->and($events->events[0]->token->accessToken())->toBe('new-access-token')
+        ->and($events->events[0]->token->refreshToken())->toBe('new-refresh-token');
 });
 
 test('ensure dispatches nothing while the token is still valid', function () {
@@ -175,7 +175,7 @@ test('ensure dispatches nothing while the token is still valid', function () {
     tokenManager(
         new FakeHttpClient([]),
         grant: null,
-        accessToken: AccessToken::fromValues('valid-token', time() + 3600, 'the-refresh-token'),
+        token: Token::fromValues('valid-token', time() + 3600, 'the-refresh-token'),
         events: $events,
     )->ensure();
 
@@ -189,8 +189,8 @@ test('current returns the resolved access token', function () {
 
     $manager->ensure();
 
-    expect($manager->current())->toBeInstanceOf(AccessToken::class)
-        ->and($manager->current()?->value())->toBe('access-token');
+    expect($manager->current())->toBeInstanceOf(Token::class)
+        ->and($manager->current()?->accessToken())->toBe('access-token');
 });
 
 test('authenticate throws when no grant is configured and no refreshable token exists', function () {

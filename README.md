@@ -58,14 +58,14 @@ $podio = PodioClient::factory()
 ### Authentication
 
 A client always needs your Podio API credentials plus one authentication method, slotted into the builder above. 
-The token manager fetches, caches and refreshes the access token for you.
+The token manager fetches, caches and refreshes the token for you.
 
 | Method             | Builder call                                           | Use when                                            |
 |--------------------|--------------------------------------------------------|-----------------------------------------------------|
 | Password           | `->withPasswordAuth($username, $password)`             | service account, server-to-server                   |
 | Authorization code | `->withAuthorizationCodeAuth($code, $redirectUri)`     | per-user OAuth2, after the user authorises your app |
 | App                | `->withAppAuth($appId, $appToken)`                     | a single Podio app via its app token                |
-| Access token       | `->withAccessToken($token, $expiresAt, $refreshToken)` | reuse a token you stored                            |
+| Token              | `->withToken($accessToken, $expiresAt, $refreshToken)` | reuse a token you stored                            |
 
 Read (and persist) the current token:
 
@@ -73,7 +73,7 @@ Read (and persist) the current token:
 $token = $podio->authenticate(); // ensure a valid token and return it
 $token = $podio->token();        // current token
 
-$token->value();
+$token->accessToken();
 $token->expiresAt();
 $token->refreshToken();
 ```

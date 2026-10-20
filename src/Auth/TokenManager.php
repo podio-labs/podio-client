@@ -5,7 +5,7 @@ namespace Podio\Client\Auth;
 use Podio\Client\Auth\Grants\Grant;
 use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\Grants\RefreshTokenGrant;
-use Podio\Client\Events\AccessTokenRefreshed;
+use Podio\Client\Events\TokenRefreshed;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Http\Transporter;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -19,50 +19,50 @@ final class TokenManager
         private readonly ?CacheInterface $cache,
         private readonly string $cacheKey,
         private readonly ?Grant $grant = null,
-        private ?AccessToken $accessToken = null,
+        private ?Token $token = null,
         private readonly ?EventDispatcherInterface $events = null,
     ) {}
 
     public function ensure(): string
     {
-        $accessToken = $this->validToken();
+        $token = $this->validToken();
 
-        if ($accessToken !== null) {
-            return $accessToken->value();
+        if ($token !== null) {
+            return $token->accessToken();
         }
 
-        if ($this->accessToken?->refreshToken() !== null) {
+        if ($this->token?->refreshToken() !== null) {
             return $this->refresh();
         }
 
-        $accessToken = $this->authenticate();
+        $token = $this->authenticate();
 
-        $this->store($accessToken);
+        $this->store($token);
 
-        return $accessToken->value();
+        return $token->accessToken();
     }
 
     public function refresh(): string
     {
-        $refreshToken = $this->accessToken?->refreshToken();
+        $refreshToken = $this->token?->refreshToken();
 
         $this->cache?->delete($this->cacheKey);
 
-        $accessToken = ($refreshToken !== null && ! $this->grant instanceof PasswordGrant)
+        $token = ($refreshToken !== null && ! $this->grant instanceof PasswordGrant)
             ? $this->requestToken(new RefreshTokenGrant($refreshToken))
             : $this->authenticate();
 
-        $this->store($accessToken);
+        $this->store($token);
 
-        return $accessToken->value();
+        return $token->accessToken();
     }
 
-    public function current(): ?AccessToken
+    public function current(): ?Token
     {
-        return $this->accessToken;
+        return $this->token;
     }
 
-    private function authenticate(): AccessToken
+    private function authenticate(): Token
     {
         if ($this->grant === null) {
             throw new PodioAuthenticationException('Podio cannot authenticate: no grant configured and no refreshable token.');
@@ -71,7 +71,7 @@ final class TokenManager
         return $this->requestToken($this->grant);
     }
 
-    private function requestToken(Grant $grant): AccessToken
+    private function requestToken(Grant $grant): Token
     {
         $response = $this->transporter->response(
             $this->transporter->send('POST', '/oauth/token', ['form_params' => [
@@ -81,34 +81,34 @@ final class TokenManager
             ]])
         );
 
-        return AccessToken::fromOAuthResponse($response->body());
+        return Token::fromOAuthResponse($response->body());
     }
 
-    private function validToken(): ?AccessToken
+    private function validToken(): ?Token
     {
-        if ($this->accessToken !== null && ! $this->accessToken->isExpired()) {
-            return $this->accessToken;
+        if ($this->token !== null && ! $this->token->isExpired()) {
+            return $this->token;
         }
 
-        $accessToken = AccessToken::fromCacheValue($this->cache?->get($this->cacheKey));
+        $token = Token::fromCacheValue($this->cache?->get($this->cacheKey));
 
-        if ($accessToken !== null) {
-            return $this->accessToken = $accessToken;
+        if ($token !== null) {
+            return $this->token = $token;
         }
 
         return null;
     }
 
-    private function store(AccessToken $accessToken): void
+    private function store(Token $token): void
     {
-        $this->accessToken = $accessToken;
+        $this->token = $token;
 
         $this->cache?->set(
             $this->cacheKey,
-            $accessToken->toCacheValue(),
-            $accessToken->ttl(),
+            $token->toCacheValue(),
+            $token->ttl(),
         );
 
-        $this->events?->dispatch(new AccessTokenRefreshed($accessToken));
+        $this->events?->dispatch(new TokenRefreshed($token));
     }
 }

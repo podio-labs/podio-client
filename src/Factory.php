@@ -6,12 +6,12 @@ use Closure;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use InvalidArgumentException;
-use Podio\Client\Auth\AccessToken;
 use Podio\Client\Auth\Grants\AppGrant;
 use Podio\Client\Auth\Grants\AuthorizationCodeGrant;
 use Podio\Client\Auth\Grants\Grant;
 use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\PodioCredentials;
+use Podio\Client\Auth\Token;
 use Podio\Client\Auth\TokenManager;
 use Podio\Client\Http\Transporter;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -29,7 +29,7 @@ final class Factory
 
     private ?Grant $grant = null;
 
-    private ?AccessToken $accessToken = null;
+    private ?Token $token = null;
 
     private string $baseUrl = 'https://api.podio.com';
 
@@ -81,9 +81,9 @@ final class Factory
         return $this;
     }
 
-    public function withAccessToken(string $accessToken, int $expiresAt, ?string $refreshToken = null): self
+    public function withToken(string $accessToken, int $expiresAt, ?string $refreshToken = null): self
     {
-        $this->accessToken = AccessToken::fromValues($accessToken, $expiresAt, $refreshToken);
+        $this->token = Token::fromValues($accessToken, $expiresAt, $refreshToken);
 
         return $this;
     }
@@ -132,8 +132,8 @@ final class Factory
             throw new InvalidArgumentException('Podio client credentials are required. Call withClientCredentials() before make().');
         }
 
-        if ($this->grant === null && $this->accessToken === null) {
-            throw new InvalidArgumentException('Podio authentication is required. Call withPasswordAuth(), withAuthorizationCodeAuth(), withAppAuth(), or withAccessToken() before make().');
+        if ($this->grant === null && $this->token === null) {
+            throw new InvalidArgumentException('Podio authentication is required. Call withPasswordAuth(), withAuthorizationCodeAuth(), withAppAuth(), or withToken() before make().');
         }
 
         $transporter = new Transporter(
@@ -153,7 +153,7 @@ final class Factory
                 cache: $this->tokenCache,
                 cacheKey: $this->tokenCacheKey,
                 grant: $this->grant,
-                accessToken: $this->accessToken,
+                token: $this->token,
                 events: $this->events,
             ),
         );

@@ -4,10 +4,10 @@ namespace Podio\Client\Auth;
 
 use Podio\Client\Exceptions\PodioAuthenticationException;
 
-final readonly class AccessToken
+final readonly class Token
 {
     public function __construct(
-        private string $value,
+        private string $accessToken,
         private int $expiresAt,
         private ?string $refreshToken = null,
     ) {}
@@ -54,9 +54,9 @@ final readonly class AccessToken
         return $token->isExpired() ? null : $token;
     }
 
-    public function value(): string
+    public function accessToken(): string
     {
-        return $this->value;
+        return $this->accessToken;
     }
 
     public function refreshToken(): ?string
@@ -85,7 +85,7 @@ final readonly class AccessToken
     public function toCacheValue(): array
     {
         return [
-            'access_token' => $this->value,
+            'access_token' => $this->accessToken,
             'expires_at' => $this->expiresAt,
         ];
     }

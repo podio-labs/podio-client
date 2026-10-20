@@ -1,6 +1,6 @@
 <?php
 
-use Podio\Client\Auth\AccessToken;
+use Podio\Client\Auth\Token;
 use Podio\Client\Endpoints\AppsEndpoint;
 use Podio\Client\Endpoints\CommentsEndpoint;
 use Podio\Client\Endpoints\EmbedEndpoint;
@@ -109,7 +109,7 @@ test('authenticate resolves and returns the access token', function () {
 
     $token = $client->authenticate();
 
-    expect($token)->toBeInstanceOf(AccessToken::class)
-        ->and($token->value())->toBe('access-token')
+    expect($token)->toBeInstanceOf(Token::class)
+        ->and($token->accessToken())->toBe('access-token')
         ->and($client->token())->toBe($token);
 });

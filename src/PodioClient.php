@@ -2,7 +2,7 @@
 
 namespace Podio\Client;
 
-use Podio\Client\Auth\AccessToken;
+use Podio\Client\Auth\Token;
 use Podio\Client\Auth\TokenManager;
 use Podio\Client\Endpoints\AppsEndpoint;
 use Podio\Client\Endpoints\CommentsEndpoint;
@@ -78,14 +78,14 @@ final class PodioClient
         return $this->transporter->rateLimit()->snapshot();
     }
 
-    public function authenticate(): AccessToken
+    public function authenticate(): Token
     {
         $this->tokens->ensure();
 
         return $this->tokens->current() ?? throw new PodioAuthenticationException('Podio authentication did not yield an access token.');
     }
 
-    public function token(): ?AccessToken
+    public function token(): ?Token
     {
         return $this->tokens->current();
     }

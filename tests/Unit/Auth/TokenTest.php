@@ -1,12 +1,12 @@
 <?php
 
-use Podio\Client\Auth\AccessToken;
+use Podio\Client\Auth\Token;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 
 test('fromOAuthResponse builds a token from a valid response', function () {
-    $token = AccessToken::fromOAuthResponse((object) ['access_token' => 'abc', 'expires_in' => 3600]);
+    $token = Token::fromOAuthResponse((object) ['access_token' => 'abc', 'expires_in' => 3600]);
 
-    expect($token->value())->toBe('abc')
+    expect($token->accessToken())->toBe('abc')
         ->and($token->refreshToken())->toBeNull()
         ->and($token->isExpired())->toBeFalse()
         ->and($token->ttl())->toBeGreaterThan(3500)
@@ -14,7 +14,7 @@ test('fromOAuthResponse builds a token from a valid response', function () {
 });
 
 test('fromOAuthResponse captures the refresh token when present', function () {
-    $token = AccessToken::fromOAuthResponse(
+    $token = Token::fromOAuthResponse(
         (object) ['access_token' => 'abc', 'expires_in' => 3600, 'refresh_token' => 'refresh-abc']
     );
 
@@ -22,7 +22,7 @@ test('fromOAuthResponse captures the refresh token when present', function () {
 });
 
 test('fromOAuthResponse ignores an empty refresh token', function () {
-    $token = AccessToken::fromOAuthResponse(
+    $token = Token::fromOAuthResponse(
         (object) ['access_token' => 'abc', 'expires_in' => 3600, 'refresh_token' => '']
     );
 
@@ -30,7 +30,7 @@ test('fromOAuthResponse ignores an empty refresh token', function () {
 });
 
 test('fromOAuthResponse throws when the access token is missing or empty', function (mixed $response) {
-    expect(fn () => AccessToken::fromOAuthResponse($response))
+    expect(fn () => Token::fromOAuthResponse($response))
         ->toThrow(PodioAuthenticationException::class, 'did not include an access token');
 })->with([
     'not an object' => ['a string'],
@@ -40,14 +40,14 @@ test('fromOAuthResponse throws when the access token is missing or empty', funct
 ]);
 
 test('fromOAuthResponse accepts the minimal valid expiration of one second', function () {
-    $token = AccessToken::fromOAuthResponse((object) ['access_token' => 'abc', 'expires_in' => 1]);
+    $token = Token::fromOAuthResponse((object) ['access_token' => 'abc', 'expires_in' => 1]);
 
-    expect($token->value())->toBe('abc')
+    expect($token->accessToken())->toBe('abc')
         ->and($token->ttl())->toBe(1);
 });
 
 test('fromOAuthResponse throws when the expiration is missing or invalid', function (mixed $response) {
-    expect(fn () => AccessToken::fromOAuthResponse($response))
+    expect(fn () => Token::fromOAuthResponse($response))
         ->toThrow(PodioAuthenticationException::class, 'did not include a valid expiration');
 })->with([
     'missing expires_in' => [(object) ['access_token' => 'abc']],
@@ -57,36 +57,36 @@ test('fromOAuthResponse throws when the expiration is missing or invalid', funct
 
 test('fromValues builds a token from explicit values', function () {
     $expiresAt = time() + 1800;
-    $token = AccessToken::fromValues('seeded-token', $expiresAt, 'seeded-refresh');
+    $token = Token::fromValues('seeded-token', $expiresAt, 'seeded-refresh');
 
-    expect($token->value())->toBe('seeded-token')
+    expect($token->accessToken())->toBe('seeded-token')
         ->and($token->expiresAt())->toBe($expiresAt)
         ->and($token->refreshToken())->toBe('seeded-refresh')
         ->and($token->isExpired())->toBeFalse();
 });
 
 test('fromValues defaults the refresh token to null', function () {
-    $token = AccessToken::fromValues('seeded-token', time() + 1800);
+    $token = Token::fromValues('seeded-token', time() + 1800);
 
     expect($token->refreshToken())->toBeNull();
 });
 
 test('toCacheValue and fromCacheValue round-trip a token', function () {
-    $token = AccessToken::fromOAuthResponse((object) ['access_token' => 'abc', 'expires_in' => 3600]);
+    $token = Token::fromOAuthResponse((object) ['access_token' => 'abc', 'expires_in' => 3600]);
 
     $cached = $token->toCacheValue();
 
     expect($cached)->toHaveKeys(['access_token', 'expires_at'])
         ->and($cached['access_token'])->toBe('abc');
 
-    $restored = AccessToken::fromCacheValue($cached);
+    $restored = Token::fromCacheValue($cached);
 
-    expect($restored)->toBeInstanceOf(AccessToken::class)
-        ->and($restored->value())->toBe('abc');
+    expect($restored)->toBeInstanceOf(Token::class)
+        ->and($restored->accessToken())->toBe('abc');
 });
 
 test('fromCacheValue returns null for unusable cache values', function (mixed $value) {
-    expect(AccessToken::fromCacheValue($value))->toBeNull();
+    expect(Token::fromCacheValue($value))->toBeNull();
 })->with([
     'not an array' => ['a string'],
     'missing token' => [['expires_at' => 9999999999]],
@@ -97,10 +97,10 @@ test('fromCacheValue returns null for unusable cache values', function (mixed $v
 ]);
 
 test('the cache value never carries the refresh token', function () {
-    $token = AccessToken::fromOAuthResponse(
+    $token = Token::fromOAuthResponse(
         (object) ['access_token' => 'abc', 'expires_in' => 3600, 'refresh_token' => 'refresh-abc']
     );
 
     expect($token->toCacheValue())->not->toHaveKey('refresh_token')
-        ->and(AccessToken::fromCacheValue($token->toCacheValue())?->refreshToken())->toBeNull();
+        ->and(Token::fromCacheValue($token->toCacheValue())?->refreshToken())->toBeNull();
 });
