@@ -121,6 +121,22 @@ $user = $podio->users()->get();
 $status = $podio->users()->getStatus();
 ```
 
+### Request options
+
+```php
+$item = $podio->items()->withFields('items.fields(files)')->get($itemId);
+$item = $podio->items()->withRetry(3)->get($itemId);
+$item = $podio->items()->withTimeout(120)->get($itemId);
+```
+
+| Option                  | What it does                    |
+|-------------------------|---------------------------------|
+| `withFields($fields)`   | sets Podio's `fields` parameter |
+| `withRetry($times)`     | retries a failed call           |
+| `withTimeout($seconds)` | sets the timeout of the call*   |
+
+*`withTimeout()` needs an HTTP client that implements `Podio\Client\Http\TimeoutClient`.
+
 ### Events
 
 With an event dispatcher, the client dispatches `Podio\Client\Events\TokenRefreshed` whenever it obtains a token: on the first authentication and on every refresh. Listen to it to store the new token, refresh token included, as soon as Podio issues it:
