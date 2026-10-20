@@ -24,6 +24,7 @@
         "php": "^8.3",
         "halaxa/json-machine": "^1.2",
         "php-http/discovery": "^1.14",
+        "psr/event-dispatcher": "^1.0",
         "psr/http-client": "^1.0",
         "psr/http-client-implementation": "^1.0",
         "psr/http-factory": "^1.0",
