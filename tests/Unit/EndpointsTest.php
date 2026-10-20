@@ -107,14 +107,19 @@ test('items()->get fetches an item', function () {
         ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/item/5');
 });
 
-test('items()->getCount reads the envelope total with a minimal filter', function () {
-    [$client, $http] = podioClientWith([httpResponse(200, [], '{"items":[],"total":42}')]);
+test('items()->getCount reads the count of the app', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"count":42}')]);
 
     expect($client->items()->getCount(9))->toBe(42)
-        ->and($http->requests[0]->getMethod())->toBe('POST')
-        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/item/app/9/filter/')
-        ->and((string) $http->requests[0]->getBody())->toContain('"limit":1')
-        ->and((string) $http->requests[0]->getBody())->toContain('"offset":0');
+        ->and($http->requests[0]->getMethod())->toBe('GET')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/item/app/9/count');
+});
+
+test('items()->getCount passes the view to count', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"count":7}')]);
+
+    expect($client->items()->getCount(9, ['view_id' => 3]))->toBe(7)
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/item/app/9/count?view_id=3');
 });
 
 test('items()->filter returns an item collection', function () {

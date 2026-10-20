@@ -1,5 +1,6 @@
 <?php
 
+use Podio\Client\Exceptions\MissingResourceFieldException;
 use Podio\Client\Resources\Item;
 use Podio\Client\Resources\ItemCollection;
 
@@ -20,6 +21,18 @@ test('total falls back to the item count when the envelope omits it', function (
     $collection = new ItemCollection((object) ['items' => [(object) ['item_id' => 1]]]);
 
     expect($collection->total())->toBe(1);
+});
+
+test('filtered counts the items that match the filters', function () {
+    $collection = new ItemCollection((object) ['items' => [], 'total' => 5000, 'filtered' => 501]);
+
+    expect($collection->filtered())->toBe(501);
+});
+
+test('filtered fails when the envelope omits it', function () {
+    $collection = new ItemCollection((object) ['items' => [], 'total' => 42]);
+
+    expect(fn () => $collection->filtered())->toThrow(MissingResourceFieldException::class, 'The filtered field is not present in the items payload.');
 });
 
 test('it degrades gracefully for a non-object payload', function () {

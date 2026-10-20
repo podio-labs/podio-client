@@ -2,6 +2,7 @@
 
 namespace Podio\Client\Resources;
 
+use Podio\Client\Exceptions\MissingResourceFieldException;
 use stdClass;
 
 /**
@@ -33,6 +34,13 @@ final readonly class ItemCollection extends ResourceCollection
         $total = $this->payload()->total ?? null;
 
         return is_int($total) ? $total : count($this->raw());
+    }
+
+    public function filtered(): int
+    {
+        $filtered = $this->payload()->filtered ?? null;
+
+        return is_int($filtered) ? $filtered : throw new MissingResourceFieldException('items', 'filtered');
     }
 
     /**

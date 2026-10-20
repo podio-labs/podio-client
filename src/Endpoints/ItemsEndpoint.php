@@ -20,15 +20,15 @@ final class ItemsEndpoint extends BaseEndpoint
     }
 
     /**
-     * @link https://developers.podio.com/doc/items/filter-items-4496747
+     * @link https://developers.podio.com/doc/items/get-item-count-34819997
      *
      * @param  array<string, mixed>  $params
      */
     public function getCount(int $appId, array $params = []): int
     {
-        $params = [...$params, 'limit' => 1, 'offset' => 0];
-
-        return $this->filter($appId, $params)->total();
+        return $this->request('GET', '/item/app/' . $appId . '/count', [
+            'query' => $params,
+        ])->count;
     }
 
     /**
