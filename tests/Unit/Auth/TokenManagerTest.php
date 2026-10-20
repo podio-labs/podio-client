@@ -7,8 +7,10 @@ use Podio\Client\Auth\Grants\Grant;
 use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\PodioCredentials;
 use Podio\Client\Auth\TokenManager;
+use Podio\Client\Events\AccessTokenRefreshed;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Tests\Support\ArrayCache;
+use Podio\Client\Tests\Support\EventRecorder;
 use Podio\Client\Tests\Support\FakeHttpClient;
 use Psr\SimpleCache\CacheInterface;
 
@@ -17,6 +19,7 @@ function tokenManager(
     ?CacheInterface $cache = null,
     ?Grant $grant = new PasswordGrant('user', 'pass'),
     ?AccessToken $accessToken = null,
+    ?EventRecorder $events = null,
 ): TokenManager {
     return new TokenManager(
         new PodioCredentials('client-id', 'client-secret'),
@@ -25,6 +28,7 @@ function tokenManager(
         'podio.access_token',
         $grant,
         $accessToken,
+        $events,
     );
 }
 
@@ -137,6 +141,45 @@ test('refresh forgets the token and authenticates again with the password grant'
 
     expect($manager->refresh())->toBe('access-token')
         ->and(AccessToken::fromCacheValue($cache->get('podio.access_token'))?->value())->toBe('access-token');
+});
+
+test('ensure dispatches the token it obtains by authenticating', function () {
+    $events = new EventRecorder;
+
+    tokenManager(new FakeHttpClient([oauthTokenResponse()]), events: $events)->ensure();
+
+    expect($events->events)->toHaveCount(1)
+        ->and($events->events[0])->toBeInstanceOf(AccessTokenRefreshed::class)
+        ->and($events->events[0]->accessToken->value())->toBe('access-token');
+});
+
+test('ensure dispatches the new token pair it obtains by refreshing', function () {
+    $events = new EventRecorder;
+    $refreshResponse = httpResponse(200, [], (string) json_encode(['access_token' => 'new-access-token', 'expires_in' => 3600, 'refresh_token' => 'new-refresh-token']));
+
+    tokenManager(
+        new FakeHttpClient([$refreshResponse]),
+        grant: null,
+        accessToken: AccessToken::fromValues('stale-token', time() - 10, 'old-refresh-token'),
+        events: $events,
+    )->ensure();
+
+    expect($events->events)->toHaveCount(1)
+        ->and($events->events[0]->accessToken->value())->toBe('new-access-token')
+        ->and($events->events[0]->accessToken->refreshToken())->toBe('new-refresh-token');
+});
+
+test('ensure dispatches nothing while the token is still valid', function () {
+    $events = new EventRecorder;
+
+    tokenManager(
+        new FakeHttpClient([]),
+        grant: null,
+        accessToken: AccessToken::fromValues('valid-token', time() + 3600, 'the-refresh-token'),
+        events: $events,
+    )->ensure();
+
+    expect($events->events)->toBe([]);
 });
 
 test('current returns the resolved access token', function () {

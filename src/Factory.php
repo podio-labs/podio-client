@@ -14,6 +14,7 @@ use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\PodioCredentials;
 use Podio\Client\Auth\TokenManager;
 use Podio\Client\Http\Transporter;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -35,6 +36,8 @@ final class Factory
     private ?CacheInterface $tokenCache = null;
 
     private string $tokenCacheKey = 'podio:access_token';
+
+    private ?EventDispatcherInterface $events = null;
 
     private ?ClientInterface $http = null;
 
@@ -100,6 +103,13 @@ final class Factory
         return $this;
     }
 
+    public function withEventDispatcher(EventDispatcherInterface $events): self
+    {
+        $this->events = $events;
+
+        return $this;
+    }
+
     public function withHttpClient(ClientInterface $http): self
     {
         $this->http = $http;
@@ -144,6 +154,7 @@ final class Factory
                 cacheKey: $this->tokenCacheKey,
                 grant: $this->grant,
                 accessToken: $this->accessToken,
+                events: $this->events,
             ),
         );
     }

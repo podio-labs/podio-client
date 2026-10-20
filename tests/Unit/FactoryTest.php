@@ -1,7 +1,9 @@
 <?php
 
+use Podio\Client\Events\AccessTokenRefreshed;
 use Podio\Client\PodioClient;
 use Podio\Client\Tests\Support\ArrayCache;
+use Podio\Client\Tests\Support\EventRecorder;
 
 test('make requires client credentials', function () {
     expect(fn () => PodioClient::factory()->make())
@@ -63,4 +65,21 @@ test('make builds a client from a seeded access token', function () {
 
     expect($client)->toBeInstanceOf(PodioClient::class)
         ->and($client->token()?->value())->toBe('seeded-token');
+});
+
+test('make hands the event dispatcher to the token manager', function () {
+    $factory = psr17();
+    $events = new EventRecorder;
+
+    PodioClient::factory()
+        ->withClientCredentials('id', 'secret')
+        ->withPasswordAuth('user', 'pass')
+        ->withEventDispatcher($events)
+        ->withHttpClient(fakeHttp([]))
+        ->withHttpFactories($factory, $factory, $factory)
+        ->make()
+        ->authenticate();
+
+    expect($events->events)->toHaveCount(1)
+        ->and($events->events[0])->toBeInstanceOf(AccessTokenRefreshed::class);
 });

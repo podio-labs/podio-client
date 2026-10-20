@@ -5,8 +5,10 @@ namespace Podio\Client\Auth;
 use Podio\Client\Auth\Grants\Grant;
 use Podio\Client\Auth\Grants\PasswordGrant;
 use Podio\Client\Auth\Grants\RefreshTokenGrant;
+use Podio\Client\Events\AccessTokenRefreshed;
 use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Http\Transporter;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\SimpleCache\CacheInterface;
 
 final class TokenManager
@@ -18,6 +20,7 @@ final class TokenManager
         private readonly string $cacheKey,
         private readonly ?Grant $grant = null,
         private ?AccessToken $accessToken = null,
+        private readonly ?EventDispatcherInterface $events = null,
     ) {}
 
     public function ensure(): string
@@ -105,5 +108,7 @@ final class TokenManager
             $accessToken->toCacheValue(),
             $accessToken->ttl(),
         );
+
+        $this->events?->dispatch(new AccessTokenRefreshed($accessToken));
     }
 }
