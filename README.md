@@ -51,6 +51,7 @@ $podio = PodioClient::factory()
     ->withPasswordAuth($username, $password)          // required (see Authentication for more details)
     ->withBaseUrl('https://api.podio.com')            // optional
     ->withTokenCache($cache)                          // optional (PSR-16)
+    ->withEventDispatcher($events)                    // optional (PSR-14)
     ->withHttpClient($client)                         // optional (PSR-18)
     ->make();
 ```
@@ -86,6 +87,7 @@ $item = $podio->items()->get($itemId);
 $item = $podio->items()->create($appId, ['fields' => ['title' => 'Hello']]);
 $item = $podio->items()->update($itemId, ['fields' => ['title' => 'Updated']]);
 $total = $podio->items()->getCount($appId);
+$items = $podio->items()->lazy($appId, ['limit' => 500]);
 
 // Files
 $file = $podio->files()->upload($absolutePath, 'photo.jpg');
@@ -113,6 +115,20 @@ $space = $podio->spaces()->get($spaceId);
 // Apps
 $app = $podio->apps()->get($appId);
 $apps = $podio->apps()->getForSpace($spaceId);
+
+// Users
+$user = $podio->users()->get();
+$status = $podio->users()->getStatus();
+```
+
+### Events
+
+With an event dispatcher, the client dispatches `Podio\Client\Events\TokenRefreshed` whenever it obtains a token: on the first authentication and on every refresh. Listen to it to store the new token, refresh token included, as soon as Podio issues it:
+
+```php
+$event->token->accessToken();
+$event->token->refreshToken();
+$event->token->expiresAt();
 ```
 
 ### Raw requests
@@ -138,8 +154,9 @@ $podio->rateLimit()->remaining();
 
 `PodioClient` wraps a transporter over your PSR-18 client (or one discovered via `php-http/discovery`) and a token manager that:
 
-- authenticates with the configured grant (password, authorization code, app, or a seeded access token) and caches the access token when you pass a PSR-16 cache;
-- refreshes the token automatically: `send()` retries once on an expired-token response, using the refresh token when there is one, otherwise re-authenticating.
+- authenticates with the configured grant (password, authorization code, app, or a seeded token) and caches the access token when you pass a PSR-16 cache;
+- refreshes the token automatically: `send()` retries once on an expired-token response, using the refresh token when there is one, otherwise re-authenticating;
+- dispatches `TokenRefreshed` through the PSR-14 event dispatcher, when you pass one, every time it obtains a token.
 
 Every endpoint (`items()`, `files()`, …) is a small typed wrapper over `send()`.
 
