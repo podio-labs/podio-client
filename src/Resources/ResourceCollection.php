@@ -5,6 +5,7 @@ namespace Podio\Client\Resources;
 use ArrayIterator;
 use Countable;
 use IteratorAggregate;
+use stdClass;
 use Traversable;
 
 /**
@@ -22,7 +23,7 @@ abstract readonly class ResourceCollection implements Countable, IteratorAggrega
     }
 
     /**
-     * @return array<int, object>
+     * @return array<int, stdClass>
      */
     public function raw(): array
     {
@@ -56,7 +57,7 @@ abstract readonly class ResourceCollection implements Countable, IteratorAggrega
      */
     public function sortBy(callable|string $key, bool $descending = false): static
     {
-        return new static(array_map(fn (RawObjectResource $resource): object => $resource->raw(), $this->sortResources($key, $descending)));
+        return new static(array_map(fn (RawObjectResource $resource): stdClass => $resource->raw(), $this->sortResources($key, $descending)));
     }
 
     /**
@@ -105,5 +106,5 @@ abstract readonly class ResourceCollection implements Countable, IteratorAggrega
     /**
      * @return T
      */
-    abstract protected function wrap(object $raw): RawObjectResource;
+    abstract protected function wrap(stdClass $raw): RawObjectResource;
 }

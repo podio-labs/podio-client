@@ -2,12 +2,14 @@
 
 namespace Podio\Client\Resources;
 
+use stdClass;
+
 /**
  * @extends ResourceCollection<Organization>
  */
 final readonly class OrganizationCollection extends ResourceCollection
 {
-    protected function wrap(object $raw): Organization
+    protected function wrap(stdClass $raw): Organization
     {
         return new Organization($raw);
     }

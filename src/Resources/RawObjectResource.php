@@ -2,11 +2,13 @@
 
 namespace Podio\Client\Resources;
 
+use stdClass;
+
 abstract readonly class RawObjectResource
 {
-    public function __construct(private object $raw) {}
+    public function __construct(private stdClass $raw) {}
 
-    public function raw(): object
+    public function raw(): stdClass
     {
         return $this->raw;
     }

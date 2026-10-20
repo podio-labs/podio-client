@@ -2,12 +2,14 @@
 
 namespace Podio\Client\Endpoints;
 
+use stdClass;
+
 final class HooksEndpoint extends BaseEndpoint
 {
     /**
      * @link https://developers.podio.com/doc/hooks/get-hooks-215285
      *
-     * @return array<int, object>
+     * @return array<int, stdClass>
      */
     public function getForApp(int $appId): array
     {

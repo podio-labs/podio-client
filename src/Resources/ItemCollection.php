@@ -2,6 +2,8 @@
 
 namespace Podio\Client\Resources;
 
+use stdClass;
+
 /**
  * @extends ResourceCollection<Item>
  */
@@ -13,7 +15,7 @@ final readonly class ItemCollection extends ResourceCollection
     }
 
     /**
-     * @return array<int, object>
+     * @return array<int, stdClass>
      */
     public function raw(): array
     {
@@ -39,12 +41,12 @@ final readonly class ItemCollection extends ResourceCollection
     public function sortBy(callable|string $key, bool $descending = false): static
     {
         $payload = clone $this->payload();
-        $payload->items = array_map(fn (RawObjectResource $resource): object => $resource->raw(), $this->sortResources($key, $descending));
+        $payload->items = array_map(fn (RawObjectResource $resource): stdClass => $resource->raw(), $this->sortResources($key, $descending));
 
         return new self($payload);
     }
 
-    protected function wrap(object $raw): Item
+    protected function wrap(stdClass $raw): Item
     {
         return new Item($raw);
     }
