@@ -5,6 +5,7 @@ namespace Podio\Client\Endpoints;
 use Podio\Client\Resources\Item;
 use Podio\Client\Resources\ItemCollection;
 use Podio\Client\Resources\ItemReferenceCollection;
+use Podio\Client\Resources\LazyItemCollection;
 use Podio\Client\Resources\RevisionCollection;
 use Podio\Client\Resources\RevisionDifferenceCollection;
 
@@ -39,6 +40,19 @@ final class ItemsEndpoint extends BaseEndpoint
     {
         return new ItemCollection($this->request('POST', '/item/app/' . $appId . '/filter/', [
             'json' => $params,
+        ]));
+    }
+
+    /**
+     * @link https://developers.podio.com/doc/items/filter-items-4496747
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function lazy(int $appId, array $params = []): LazyItemCollection
+    {
+        return new LazyItemCollection((string) $this->request('POST', '/item/app/' . $appId . '/filter/', [
+            'json' => $params,
+            'raw' => true,
         ]));
     }
 

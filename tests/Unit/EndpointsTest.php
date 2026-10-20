@@ -6,6 +6,7 @@ use Podio\Client\Resources\AppCollection;
 use Podio\Client\Resources\Item;
 use Podio\Client\Resources\ItemCollection;
 use Podio\Client\Resources\ItemReferenceCollection;
+use Podio\Client\Resources\LazyItemCollection;
 use Podio\Client\Resources\Organization;
 use Podio\Client\Resources\OrganizationCollection;
 use Podio\Client\Resources\RevisionCollection;
@@ -120,6 +121,51 @@ test('items()->filter returns an item collection', function () {
     expect($items)->toBeInstanceOf(ItemCollection::class)
         ->and($items->total())->toBe(1)
         ->and((string) $http->requests[0]->getBody())->toContain('"limit":5');
+});
+
+test('items()->lazy filters the items and yields them one at a time', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"total":2,"items":[{"item_id":1},{"item_id":2}],"filtered":2}')]);
+
+    $items = $client->items()->lazy(9, ['limit' => 500]);
+
+    expect($items)->toBeInstanceOf(LazyItemCollection::class)
+        ->and($http->requests[0]->getMethod())->toBe('POST')
+        ->and((string) $http->requests[0]->getUri())->toBe('https://api.podio.com/item/app/9/filter/')
+        ->and((string) $http->requests[0]->getBody())->toContain('"limit":500')
+        ->and(iterator_to_array($items, false))->each->toBeInstanceOf(Item::class)
+        ->and(array_map(fn (Item $item): int => $item->item_id, iterator_to_array($items, false)))->toBe([1, 2]);
+});
+
+test('items()->lazy yields each item exactly as a full decode would', function () {
+    $body = json_encode([
+        'total' => 3,
+        'fields' => [['items' => [1, 2]], ['label' => 'items']],
+        'label' => 'items',
+        'items' => [
+            ['item_id' => 1, 'title' => 'Braces { } [ ] and "quotes"', 'path' => 'C:\\temp\\', 'note' => 'ends with a backslash \\'],
+            ['item_id' => 2, 'title' => 'Café ✅ €', 'items' => [['item_id' => 99]], 'fields' => [['values' => [['value' => ['nested' => true]]]]]],
+            ['item_id' => 3, 'empty' => [], 'object' => new stdClass, 'unicode' => "\u{1F680}"],
+        ],
+        'filtered' => 3,
+    ]);
+    [$client] = podioClientWith([httpResponse(200, [], $body)]);
+
+    expect(iterator_to_array($client->items()->lazy(9)->raw(), false))->toEqual(json_decode($body)->items);
+});
+
+test('items()->lazy yields nothing for an empty page', function () {
+    [$client] = podioClientWith([httpResponse(200, [], '{"total":0,"items":[],"filtered":0}')]);
+
+    $items = $client->items()->lazy(9);
+
+    expect(iterator_to_array($items, false))->toBe([])
+        ->and(iterator_to_array($items->raw(), false))->toBe([]);
+});
+
+test('items()->lazy fails at the call when podio rejects the request', function () {
+    [$client] = podioClientWith([httpResponse(420, [], '{"error":"rate_limit","error_description":"Too many requests"}')]);
+
+    expect(fn () => $client->items()->lazy(9))->toThrow(PodioRequestException::class);
 });
 
 test('items()->getReferences returns a reference collection', function () {
