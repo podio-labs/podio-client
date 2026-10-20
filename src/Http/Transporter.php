@@ -35,7 +35,11 @@ final readonly class Transporter
      */
     public function send(string $method, string $uri, array $options = [], ?string $bearer = null): ResponseInterface
     {
-        return $this->http->sendRequest(
+        $http = isset($options['timeout']) && $this->http instanceof TimeoutClient
+            ? $this->http->withTimeout((int) $options['timeout'])
+            : $this->http;
+
+        return $http->sendRequest(
             $this->buildRequest($method, $uri, $options, $bearer)
         );
     }

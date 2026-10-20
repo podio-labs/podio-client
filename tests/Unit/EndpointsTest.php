@@ -1,6 +1,7 @@
 <?php
 
 use Podio\Client\Exceptions\PodioRequestException;
+use Podio\Client\PodioClient;
 use Podio\Client\Resources\App;
 use Podio\Client\Resources\AppCollection;
 use Podio\Client\Resources\Item;
@@ -17,6 +18,7 @@ use Podio\Client\Resources\User;
 use Podio\Client\Resources\UserStatus;
 use Podio\Client\RetryPolicy;
 use Podio\Client\Tests\Support\FailingStreamWrapper;
+use Podio\Client\Tests\Support\TimeoutRecordingHttpClient;
 
 test('apps()->get fetches an app', function () {
     [$client, $http] = podioClientWith([httpResponse(200, [], '{"app_id":1,"fields":[]}')]);
@@ -162,6 +164,29 @@ test('items()->lazy yields nothing for an empty page', function () {
 
     expect(iterator_to_array($items, false))->toBe([])
         ->and(iterator_to_array($items->raw(), false))->toBe([]);
+});
+
+test('withTimeout hands the timeout to a timeout client', function () {
+    $http = new TimeoutRecordingHttpClient(fakeHttp([httpResponse(200, [], '{"items":[],"total":0}')]));
+    $factory = psr17();
+    $client = PodioClient::factory()
+        ->withClientCredentials('client-id', 'client-secret')
+        ->withPasswordAuth('username', 'password')
+        ->withHttpClient($http)
+        ->withHttpFactories($factory, $factory, $factory)
+        ->make();
+
+    $client->items()->withTimeout(120)->filter(9);
+
+    expect($http->timeouts)->toBe([120]);
+});
+
+test('withTimeout is ignored by an http client that cannot set one', function () {
+    [$client, $http] = podioClientWith([httpResponse(200, [], '{"items":[],"total":0}')]);
+
+    $client->items()->withTimeout(120)->filter(9);
+
+    expect($http->requests)->toHaveCount(1);
 });
 
 test('items()->lazy fails at the call when podio rejects the request', function () {

@@ -34,6 +34,11 @@ abstract class BaseEndpoint
         return $this->withOptions($this->options->withRetry($policy));
     }
 
+    public function withTimeout(int $seconds): static
+    {
+        return $this->withOptions($this->options->withTimeout($seconds));
+    }
+
     protected function withOptions(RequestOptions $options): static
     {
         return new static($this->client, $options);
@@ -68,6 +73,10 @@ abstract class BaseEndpoint
 
         if ($query !== []) {
             $options['query'] = $query;
+        }
+
+        if ($this->options->timeout !== null) {
+            $options['timeout'] = $this->options->timeout;
         }
 
         return $options;
