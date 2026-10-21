@@ -14,7 +14,6 @@ use Podio\Client\Endpoints\OrganizationsEndpoint;
 use Podio\Client\Endpoints\SearchEndpoint;
 use Podio\Client\Endpoints\SpacesEndpoint;
 use Podio\Client\Endpoints\UsersEndpoint;
-use Podio\Client\Exceptions\PodioAuthenticationException;
 use Podio\Client\Http\Transporter;
 
 final class PodioClient
@@ -86,9 +85,7 @@ final class PodioClient
 
     public function authenticate(): Token
     {
-        $this->tokens->ensure();
-
-        return $this->tokens->current() ?? throw new PodioAuthenticationException('Podio authentication did not yield an access token.');
+        return $this->tokens->ensure();
     }
 
     public function token(): ?Token
@@ -101,10 +98,12 @@ final class PodioClient
      */
     public function send(string $method, string $uri, array $options = []): PodioResponse
     {
-        $response = $this->transporter->send($method, $uri, $options, $this->tokens->ensure());
+        $token = $this->tokens->ensure();
+        $response = $this->transporter->send($method, $uri, $options, $token->accessToken(), $token->baseUrl());
 
         if ($this->transporter->isExpiredTokenResponse($response)) {
-            $response = $this->transporter->send($method, $uri, $options, $this->tokens->refresh());
+            $token = $this->tokens->refresh();
+            $response = $this->transporter->send($method, $uri, $options, $token->accessToken(), $token->baseUrl());
         }
 
         return $this->transporter->response($response, (bool) ($options['raw'] ?? false));

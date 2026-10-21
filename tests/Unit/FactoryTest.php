@@ -83,3 +83,37 @@ test('make hands the event dispatcher to the token manager', function () {
     expect($events->events)->toHaveCount(1)
         ->and($events->events[0])->toBeInstanceOf(TokenRefreshed::class);
 });
+
+test('a stored token with its own base url sends the calls there', function () {
+    $http = fakeHttp([httpResponse(200, [], '{"org_id":1}')], withOAuth: false);
+    $factory = psr17();
+
+    PodioClient::factory()
+        ->withClientCredentials('id', 'secret')
+        ->withToken('stored-token', time() + 3600, 'stored-refresh', 'https://api.podio.example')
+        ->withHttpClient($http)
+        ->withHttpFactories($factory, $factory, $factory)
+        ->make()
+        ->organizations()
+        ->get(1);
+
+    expect((string) $http->requests[0]->getUri())->toBe('https://api.podio.example/org/1');
+});
+
+test('make asks for the token at the given token url', function () {
+    $http = fakeHttp([httpResponse(200, [], '{"org_id":1}')]);
+    $factory = psr17();
+
+    PodioClient::factory()
+        ->withClientCredentials('id', 'secret')
+        ->withPasswordAuth('user', 'pass')
+        ->withTokenUrl('https://auth.podio.example/oauth/token')
+        ->withHttpClient($http)
+        ->withHttpFactories($factory, $factory, $factory)
+        ->make()
+        ->organizations()
+        ->get(1);
+
+    expect((string) $http->allRequests[0]->getUri())->toBe('https://auth.podio.example/oauth/token')
+        ->and((string) $http->allRequests[1]->getUri())->toBe('https://api.podio.com/org/1');
+});

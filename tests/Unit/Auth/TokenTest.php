@@ -104,3 +104,8 @@ test('the cache value never carries the refresh token', function () {
     expect($token->toCacheValue())->not->toHaveKey('refresh_token')
         ->and(Token::fromCacheValue($token->toCacheValue())?->refreshToken())->toBeNull();
 });
+
+test('a token has no base url of its own unless it is given one', function () {
+    expect(Token::fromValues('a', time() + 60)->baseUrl())->toBeNull()
+        ->and(Token::fromValues('a', time() + 60, 'r', 'https://api.podio.example')->baseUrl())->toBe('https://api.podio.example');
+});

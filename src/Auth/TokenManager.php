@@ -16,6 +16,7 @@ final class TokenManager
     public function __construct(
         private readonly PodioCredentials $credentials,
         private readonly Transporter $transporter,
+        private readonly string $tokenUrl,
         private readonly ?CacheInterface $cache,
         private readonly string $cacheKey,
         private readonly ?Grant $grant = null,
@@ -23,12 +24,12 @@ final class TokenManager
         private readonly ?EventDispatcherInterface $events = null,
     ) {}
 
-    public function ensure(): string
+    public function ensure(): Token
     {
         $token = $this->validToken();
 
         if ($token !== null) {
-            return $token->accessToken();
+            return $token;
         }
 
         if ($this->token?->refreshToken() !== null) {
@@ -39,10 +40,10 @@ final class TokenManager
 
         $this->store($token);
 
-        return $token->accessToken();
+        return $token;
     }
 
-    public function refresh(): string
+    public function refresh(): Token
     {
         $refreshToken = $this->token?->refreshToken();
 
@@ -54,7 +55,7 @@ final class TokenManager
 
         $this->store($token);
 
-        return $token->accessToken();
+        return $token;
     }
 
     public function current(): ?Token
@@ -74,7 +75,7 @@ final class TokenManager
     private function requestToken(Grant $grant): Token
     {
         $response = $this->transporter->response(
-            $this->transporter->send('POST', '/oauth/token', ['form_params' => [
+            $this->transporter->send('POST', $this->tokenUrl, ['form_params' => [
                 ...$grant->parameters(),
                 'client_id' => $this->credentials->clientId,
                 'client_secret' => $this->credentials->clientSecret,

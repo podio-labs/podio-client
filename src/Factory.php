@@ -33,6 +33,8 @@ final class Factory
 
     private string $baseUrl = 'https://api.podio.com';
 
+    private ?string $tokenUrl = null;
+
     private ?CacheInterface $tokenCache = null;
 
     private string $tokenCacheKey = 'podio:access_token';
@@ -81,9 +83,9 @@ final class Factory
         return $this;
     }
 
-    public function withToken(string $accessToken, int $expiresAt, ?string $refreshToken = null): self
+    public function withToken(string $accessToken, int $expiresAt, ?string $refreshToken = null, ?string $baseUrl = null): self
     {
-        $this->token = Token::fromValues($accessToken, $expiresAt, $refreshToken);
+        $this->token = Token::fromValues($accessToken, $expiresAt, $refreshToken, $baseUrl);
 
         return $this;
     }
@@ -91,6 +93,13 @@ final class Factory
     public function withBaseUrl(string $baseUrl): self
     {
         $this->baseUrl = $baseUrl;
+
+        return $this;
+    }
+
+    public function withTokenUrl(string $tokenUrl): self
+    {
+        $this->tokenUrl = $tokenUrl;
 
         return $this;
     }
@@ -150,6 +159,7 @@ final class Factory
             tokens: new TokenManager(
                 credentials: new PodioCredentials($this->clientId, $this->clientSecret),
                 transporter: $transporter,
+                tokenUrl: $this->tokenUrl ?? rtrim($this->baseUrl, '/') . '/oauth/token',
                 cache: $this->tokenCache,
                 cacheKey: $this->tokenCacheKey,
                 grant: $this->grant,

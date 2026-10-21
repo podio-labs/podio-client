@@ -33,14 +33,14 @@ final readonly class Transporter
     /**
      * @param  array<string, mixed>  $options
      */
-    public function send(string $method, string $uri, array $options = [], ?string $bearer = null): ResponseInterface
+    public function send(string $method, string $uri, array $options = [], ?string $accessToken = null, ?string $baseUrl = null): ResponseInterface
     {
         $http = isset($options['timeout']) && $this->http instanceof TimeoutClient
             ? $this->http->withTimeout((int) $options['timeout'])
             : $this->http;
 
         return $http->sendRequest(
-            $this->buildRequest($method, $uri, $options, $bearer)
+            $this->buildRequest($method, $uri, $options, $accessToken, $baseUrl)
         );
     }
 
@@ -72,9 +72,9 @@ final readonly class Transporter
     /**
      * @param  array<string, mixed>  $options
      */
-    private function buildRequest(string $method, string $uri, array $options, ?string $bearer): RequestInterface
+    private function buildRequest(string $method, string $uri, array $options, ?string $accessToken, ?string $baseUrl): RequestInterface
     {
-        $uri = $this->resolveUri($uri);
+        $uri = $this->resolveUri($uri, $baseUrl);
 
         if (isset($options['query']) && is_array($options['query']) && $options['query'] !== []) {
             $uri = $uri->withQuery(http_build_query($options['query']));
@@ -84,8 +84,8 @@ final readonly class Transporter
             ->createRequest($method, $uri)
             ->withHeader('Accept', 'application/json');
 
-        if ($bearer !== null) {
-            $request = $request->withHeader('Authorization', 'OAuth2 ' . $bearer);
+        if ($accessToken !== null) {
+            $request = $request->withHeader('Authorization', 'OAuth2 ' . $accessToken);
         }
 
         if (isset($options['headers']) && is_array($options['headers'])) {
@@ -164,10 +164,14 @@ final readonly class Transporter
         return str_replace(['\\', '"', "\r", "\n"], ['\\\\', '\\"', '', ''], $value);
     }
 
-    private function resolveUri(string $uri): UriInterface
+    private function resolveUri(string $uri, ?string $baseUrl): UriInterface
     {
+        if (str_contains($uri, '://')) {
+            return $this->uriFactory->createUri($uri);
+        }
+
         return $this->uriFactory->createUri(
-            rtrim($this->baseUrl, '/') . '/' . ltrim($uri, '/')
+            rtrim($baseUrl ?? $this->baseUrl, '/') . '/' . ltrim($uri, '/')
         );
     }
 

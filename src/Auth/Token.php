@@ -10,6 +10,7 @@ final readonly class Token
         private string $accessToken,
         private int $expiresAt,
         private ?string $refreshToken = null,
+        private ?string $baseUrl = null,
     ) {}
 
     public static function fromOAuthResponse(mixed $response): self
@@ -31,9 +32,9 @@ final readonly class Token
         return new self($accessToken, time() + (int) $expiresIn, $refreshToken);
     }
 
-    public static function fromValues(string $accessToken, int $expiresAt, ?string $refreshToken = null): self
+    public static function fromValues(string $accessToken, int $expiresAt, ?string $refreshToken = null, ?string $baseUrl = null): self
     {
-        return new self($accessToken, $expiresAt, $refreshToken);
+        return new self($accessToken, $expiresAt, $refreshToken, $baseUrl);
     }
 
     public static function fromCacheValue(mixed $value): ?self
@@ -67,6 +68,11 @@ final readonly class Token
     public function expiresAt(): int
     {
         return $this->expiresAt;
+    }
+
+    public function baseUrl(): ?string
+    {
+        return $this->baseUrl;
     }
 
     public function ttl(): int
